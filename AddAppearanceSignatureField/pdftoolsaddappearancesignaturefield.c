@@ -39,26 +39,7 @@
 #include "PdfTools.h"
 
 #include <locale.h>
-#if !defined(WIN32)
-#define TCHAR char
-#define _tcslen strlen
-#define _tcscat strcat
-#define _tcscpy strcpy
-#define _tcsrchr strrchr
-#define _tcstok strtok
-#define _tcslen strlen
-#define _tcscmp strcmp
-#define _tcsftime strftime
-#define _tcsncpy strncpy
-#define _tmain main
-#define _tfopen fopen
-#define _ftprintf fprintf
-#define _stprintf sprintf
-#define _tstof atof
-#define _tremove remove
-#define _tprintf printf
-#define _T(str) str
-#endif
+#include "compat.h"
 
 
 #define MIN(a, b)     (((a) < (b) ? (a) : (b)))
@@ -136,7 +117,7 @@ int _tmain(int argc, TCHAR* argv[])
 
     // By default, a test license key is active. In this case, a watermark is added to the output. 
     // If you have a license key, please uncomment the following call and set the license key.
-    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("insert-license-key-here"), NULL),
+    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("<-- insert license key -->"), NULL),
     //                                     _T("Failed to set the license key. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
     //                                     PdfTools_GetLastError());
 
@@ -163,8 +144,8 @@ int _tmain(int argc, TCHAR* argv[])
         szErrorBuff, PdfTools_GetLastError());
 
     // Choose first signature field
-    TPdfToolsPdf_SignatureFieldList* pFieldList = PdfToolsPdf_Document_GetSignatureFields(pInDoc);
-    int nFieldCount = PdfToolsPdf_SignatureFieldList_GetCount(pFieldList);
+    TPdfToolsPdf_SignatureFieldList* pFieldList  = PdfToolsPdf_Document_GetSignatureFields(pInDoc);
+    int                              nFieldCount = PdfToolsPdf_SignatureFieldList_GetCount(pFieldList);
     for (int i = 0; i < nFieldCount; i++)
     {
         TPdfToolsPdf_SignatureField* pField = PdfToolsPdf_SignatureFieldList_Get(pFieldList, i);
@@ -180,8 +161,8 @@ int _tmain(int argc, TCHAR* argv[])
 
     // Create appearance from either an XML or a JSON file
     pAppStream = _tfopen(szAppConfigFile, _T("rb"));
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pAppStream, _T("Failed to open the appearance config file \"%s\" for reading.\n"), szAppConfigFile);
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pAppStream, _T("Failed to open the appearance config file \"%s\" for reading.\n"),
+                                     szAppConfigFile);
     TPdfToolsSys_StreamDescriptor appDesc;
     PdfToolsSysCreateFILEStreamDescriptor(&appDesc, pAppStream, 0);
 
@@ -190,16 +171,16 @@ int _tmain(int argc, TCHAR* argv[])
         pAppearance = PdfToolsSign_Appearance_CreateFromXml(&appDesc);
     else
         pAppearance = PdfToolsSign_Appearance_CreateFromJson(&appDesc);
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pAppearance, _T("Failed to create appearance. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pAppearance, _T("Failed to create appearance. %s (ErrorCode: 0x%08x).\n"),
+                                     szErrorBuff, PdfTools_GetLastError());
 
     // Add custom text variable
-    PdfToolsSign_CustomTextVariableMap_Set(
-        PdfToolsSign_Appearance_GetCustomTextVariables(pAppearance), _T("company"), _T("Daily Planet"));
+    PdfToolsSign_CustomTextVariableMap_Set(PdfToolsSign_Appearance_GetCustomTextVariables(pAppearance), _T("company"),
+                                           _T("Daily Planet"));
 
     // Set appearance on signature configuration
-    PdfToolsSign_SignatureConfiguration_SetAppearance((TPdfToolsSign_SignatureConfiguration*)pSignatureConfiguration, pAppearance);
+    PdfToolsSign_SignatureConfiguration_SetAppearance((TPdfToolsSign_SignatureConfiguration*)pSignatureConfiguration,
+                                                      pAppearance);
 
     // Create output stream for writing
     pOutStream = _tfopen(szOutPath, _T("wb+"));
@@ -209,7 +190,8 @@ int _tmain(int argc, TCHAR* argv[])
 
     // Sign the input document
     pSigner = PdfToolsSign_Signer_New();
-    pOutDoc = PdfToolsSign_Signer_Sign(pSigner, pInDoc, (TPdfToolsSign_SignatureConfiguration*)pSignatureConfiguration, &outDesc, NULL);
+    pOutDoc = PdfToolsSign_Signer_Sign(pSigner, pInDoc, (TPdfToolsSign_SignatureConfiguration*)pSignatureConfiguration,
+                                       &outDesc, NULL);
     GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pOutDoc, _T("The processing has failed. (ErrorCode: 0x%08x).\n"),
                                      PdfTools_GetLastError());
 

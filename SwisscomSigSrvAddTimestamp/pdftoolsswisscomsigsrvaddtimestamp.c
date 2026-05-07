@@ -31,26 +31,7 @@
 #include "PdfTools.h"
 
 #include <locale.h>
-#if !defined(WIN32)
-#define TCHAR char
-#define _tcslen strlen
-#define _tcscat strcat
-#define _tcscpy strcpy
-#define _tcsrchr strrchr
-#define _tcstok strtok
-#define _tcslen strlen
-#define _tcscmp strcmp
-#define _tcsftime strftime
-#define _tcsncpy strncpy
-#define _tmain main
-#define _tfopen fopen
-#define _ftprintf fprintf
-#define _stprintf sprintf
-#define _tstof atof
-#define _tremove remove
-#define _tprintf printf
-#define _T(str) str
-#endif
+#include "compat.h"
 
 
 #define MIN(a, b)     (((a) < (b) ? (a) : (b)))
@@ -107,58 +88,55 @@ int _tmain(int argc, TCHAR* argv[])
         return Usage();
     }
 
-    TCHAR*                                                          szIdentity   = argv[1];
-    TCHAR*                                                          szInPath     = argv[2];
-    TCHAR*                                                          szOutPath    = argv[3];
-    FILE*                                                           pCertStream  = NULL;
-    FILE*                                                           pInStream    = NULL;
-    FILE*                                                           pOutStream   = NULL;
-    TPdfToolsPdf_Document*                                          pInDoc       = NULL;
-    TPdfTools_HttpClientHandler*                                     pHttpHandler = NULL;
-    TPdfToolsCryptoProvidersSwisscomSigSrv_Session*                 pSession     = NULL;
-    TPdfToolsCryptoProvidersSwisscomSigSrv_TimestampConfiguration*  pTimestamp   = NULL;
-    TPdfToolsSign_Signer*                                           pSigner      = NULL;
-    TPdfToolsPdf_Document*                                          pOutDoc      = NULL;
+    TCHAR*                                                         szIdentity   = argv[1];
+    TCHAR*                                                         szInPath     = argv[2];
+    TCHAR*                                                         szOutPath    = argv[3];
+    FILE*                                                          pCertStream  = NULL;
+    FILE*                                                          pInStream    = NULL;
+    FILE*                                                          pOutStream   = NULL;
+    TPdfToolsPdf_Document*                                         pInDoc       = NULL;
+    TPdfTools_HttpClientHandler*                                   pHttpHandler = NULL;
+    TPdfToolsCryptoProvidersSwisscomSigSrv_Session*                pSession     = NULL;
+    TPdfToolsCryptoProvidersSwisscomSigSrv_TimestampConfiguration* pTimestamp   = NULL;
+    TPdfToolsSign_Signer*                                          pSigner      = NULL;
+    TPdfToolsPdf_Document*                                         pOutDoc      = NULL;
 
     // Initialize library
     PdfTools_Initialize();
 
     // By default, a test license key is active. In this case, a watermark is added to the output. 
     // If you have a license key, please uncomment the following call and set the license key.
-    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("insert-license-key-here"), NULL),
+    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("<-- insert license key -->"), NULL),
     //                                     _T("Failed to set the license key. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
     //                                     PdfTools_GetLastError());
 
+
     // Create the HTTP client handler
     pHttpHandler = PdfTools_HttpClientHandler_New();
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pHttpHandler,
-        _T("Failed to create HTTP client handler. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pHttpHandler,
+                                     _T("Failed to create HTTP client handler. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
+                                     PdfTools_GetLastError());
 
     // Configure the SSL client certificate to connect to the service
     pCertStream = _tfopen(_T("clientcert.p12"), _T("rb"));
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pCertStream, _T("Failed to open the client certificate file \"clientcert.p12\" for reading.\n"));
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
+        pCertStream, _T("Failed to open the client certificate file \"clientcert.p12\" for reading.\n"));
     TPdfToolsSys_StreamDescriptor sslCertDesc;
     PdfToolsSysCreateFILEStreamDescriptor(&sslCertDesc, pCertStream, 0);
     GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(
         PdfTools_HttpClientHandler_SetClientCertificateA(pHttpHandler, &sslCertDesc, "password"),
-        _T("Failed to set the client certificate. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+        _T("Failed to set the client certificate. %s (ErrorCode: 0x%08x).\n"), szErrorBuff, PdfTools_GetLastError());
 
     // Connect to the Swisscom Signing Service
     pSession = PdfToolsCryptoProvidersSwisscomSigSrv_Session_NewA("https://ais.swisscom.com", pHttpHandler);
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pSession,
-        _T("Failed to create Swisscom session. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pSession, _T("Failed to create Swisscom session. %s (ErrorCode: 0x%08x).\n"),
+                                     szErrorBuff, PdfTools_GetLastError());
 
     // Create time-stamp configuration
     pTimestamp = PdfToolsCryptoProvidersSwisscomSigSrv_Session_CreateTimestamp(pSession, szIdentity);
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pTimestamp,
-        _T("Failed to create time-stamp configuration. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pTimestamp,
+                                     _T("Failed to create time-stamp configuration. %s (ErrorCode: 0x%08x).\n"),
+                                     szErrorBuff, PdfTools_GetLastError());
 
     // Open input document
     pInStream = _tfopen(szInPath, _T("rb"));

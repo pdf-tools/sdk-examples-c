@@ -36,26 +36,7 @@
 #include "PdfTools.h"
 
 #include <locale.h>
-#if !defined(WIN32)
-#define TCHAR char
-#define _tcslen strlen
-#define _tcscat strcat
-#define _tcscpy strcpy
-#define _tcsrchr strrchr
-#define _tcstok strtok
-#define _tcslen strlen
-#define _tcscmp strcmp
-#define _tcsftime strftime
-#define _tcsncpy strncpy
-#define _tmain main
-#define _tfopen fopen
-#define _ftprintf fprintf
-#define _stprintf sprintf
-#define _tstof atof
-#define _tremove remove
-#define _tprintf printf
-#define _T(str) str
-#endif
+#include "compat.h"
 
 
 #define MIN(a, b)     (((a) < (b) ? (a) : (b)))
@@ -271,15 +252,12 @@ void PrintConstraintResult(TPdfToolsSignatureValidation_ConstraintResult* pConst
 void FormatDate(TPdfToolsSys_Date* pDate, TCHAR* szBuffer, size_t nBufferSize)
 {
     if (pDate->iTZSign == 0)
-        _stprintf(szBuffer, _T("%02d/%02d/%04d %02d:%02d:%02d"),
-                  pDate->iDay, pDate->iMonth, pDate->iYear,
-                  pDate->iHour, pDate->iMinute, pDate->iSecond);
+        _stprintf(szBuffer, _T("%02d/%02d/%04d %02d:%02d:%02d"), pDate->iDay, pDate->iMonth, pDate->iYear, pDate->iHour,
+                  pDate->iMinute, pDate->iSecond);
     else
-        _stprintf(szBuffer, _T("%02d/%02d/%04d %02d:%02d:%02d %c%02d:%02d"),
-                  pDate->iDay, pDate->iMonth, pDate->iYear,
-                  pDate->iHour, pDate->iMinute, pDate->iSecond,
-                  pDate->iTZSign > 0 ? '+' : '-',
-                  pDate->iTZHour, pDate->iTZMinute);
+        _stprintf(szBuffer, _T("%02d/%02d/%04d %02d:%02d:%02d %c%02d:%02d"), pDate->iDay, pDate->iMonth, pDate->iYear,
+                  pDate->iHour, pDate->iMinute, pDate->iSecond, pDate->iTZSign > 0 ? '+' : '-', pDate->iTZHour,
+                  pDate->iTZMinute);
 }
 
 // Print certificate details
@@ -300,9 +278,9 @@ void PrintCertificate(TPdfToolsSignatureValidation_Certificate* pCert)
 
     // Format fingerprint as uppercase with dash separators (e.g., "03-4E-67-AC-...")
     {
-        TCHAR szFormattedFp[256] = {0};
-        size_t nFpLen = _tcslen(szFingerprint);
-        size_t j = 0;
+        TCHAR  szFormattedFp[256] = {0};
+        size_t nFpLen             = _tcslen(szFingerprint);
+        size_t j                  = 0;
         for (size_t k = 0; k < nFpLen; k++)
         {
             TCHAR c = szFingerprint[k];
@@ -324,8 +302,8 @@ void PrintCertificate(TPdfToolsSignatureValidation_Certificate* pCert)
     if (PdfToolsSignatureValidation_Certificate_GetNotAfter(pCert, &notAfter))
         FormatDate(&notAfter, szNotAfter, ARRAY_SIZE(szNotAfter));
 
-    TPdfToolsSignatureValidation_DataSource iSource = PdfToolsSignatureValidation_Certificate_GetSource(pCert);
-    TCHAR szSource[256] = {0};
+    TPdfToolsSignatureValidation_DataSource iSource       = PdfToolsSignatureValidation_Certificate_GetSource(pCert);
+    TCHAR                                   szSource[256] = {0};
     DataSourceToString(iSource, szSource, ARRAY_SIZE(szSource));
 
     _tprintf(_T("    - Subject    : %s\n"), szSubjectName);
@@ -375,8 +353,7 @@ void PrintSignatureContent(TPdfToolsSignatureValidation_SignatureContent* pConte
         _tprintf(_T("  - Validation: %s from %s\n"), szValidationTime, TimeSourceToString(iTimeSource));
 
         // Hash algorithm
-        TPdfToolsCrypto_HashAlgorithm iHashAlg =
-            PdfToolsSignatureValidation_CmsSignatureContent_GetHashAlgorithm(pCms);
+        TPdfToolsCrypto_HashAlgorithm iHashAlg = PdfToolsSignatureValidation_CmsSignatureContent_GetHashAlgorithm(pCms);
         _tprintf(_T("  - Hash      : %s\n"), HashAlgorithmToString(iHashAlg));
 
         // Signing certificate
@@ -411,8 +388,7 @@ void PrintSignatureContent(TPdfToolsSignatureValidation_SignatureContent* pConte
     }
     else if (iType == ePdfToolsSignatureValidation_SignatureContentType_TimeStampContent)
     {
-        TPdfToolsSignatureValidation_TimeStampContent* pTs =
-            (TPdfToolsSignatureValidation_TimeStampContent*)pContent;
+        TPdfToolsSignatureValidation_TimeStampContent* pTs = (TPdfToolsSignatureValidation_TimeStampContent*)pContent;
 
         // Validation time
         TPdfToolsSys_Date validationTime;
@@ -424,8 +400,7 @@ void PrintSignatureContent(TPdfToolsSignatureValidation_SignatureContent* pConte
         _tprintf(_T("  - Validation: %s from %s\n"), szValidationTime, TimeSourceToString(iTimeSource));
 
         // Hash algorithm
-        TPdfToolsCrypto_HashAlgorithm iHashAlg =
-            PdfToolsSignatureValidation_TimeStampContent_GetHashAlgorithm(pTs);
+        TPdfToolsCrypto_HashAlgorithm iHashAlg = PdfToolsSignatureValidation_TimeStampContent_GetHashAlgorithm(pTs);
         _tprintf(_T("  - Hash      : %s\n"), HashAlgorithmToString(iHashAlg));
 
         // Timestamp date
@@ -471,10 +446,9 @@ void PrintSignatureContent(TPdfToolsSignatureValidation_SignatureContent* pConte
 
 // Constraint event listener callback
 void PDFTOOLS_CALL ConstraintListener(void* pContext, const TCHAR* szMessage,
-                         TPdfToolsSignatureValidation_Indication iIndication,
-                         TPdfToolsSignatureValidation_SubIndication iSubIndication,
-                         TPdfToolsPdf_SignedSignatureField* pSignature,
-                         const TCHAR* szDataPart)
+                                      TPdfToolsSignatureValidation_Indication    iIndication,
+                                      TPdfToolsSignatureValidation_SubIndication iSubIndication,
+                                      TPdfToolsPdf_SignedSignatureField* pSignature, const TCHAR* szDataPart)
 {
     TCHAR szName[256] = {0};
     PdfToolsPdf_SignedSignatureField_GetName(pSignature, szName, ARRAY_SIZE(szName));
@@ -485,13 +459,9 @@ void PDFTOOLS_CALL ConstraintListener(void* pContext, const TCHAR* szMessage,
     else if (iIndication == ePdfToolsSignatureValidation_Indication_Invalid)
         szPrefix = _T("!");
 
-    _tprintf(_T("  - %s%s%s: %s%s %s\n"),
-             szName,
-             (szDataPart && _tcslen(szDataPart) > 0) ? _T(": ") : _T(""),
-             (szDataPart && _tcslen(szDataPart) > 0) ? szDataPart : _T(""),
-             szPrefix,
-             SubIndicationToString(iSubIndication),
-             szMessage);
+    _tprintf(_T("  - %s%s%s: %s%s %s\n"), szName, (szDataPart && _tcslen(szDataPart) > 0) ? _T(": ") : _T(""),
+             (szDataPart && _tcslen(szDataPart) > 0) ? szDataPart : _T(""), szPrefix,
+             SubIndicationToString(iSubIndication), szMessage);
 }
 
 // Check if a file name ends with a given suffix
@@ -529,30 +499,28 @@ int _tmain(int argc, TCHAR* argv[])
         return Usage();
     }
 
-    TCHAR*                                                   szInPath   = argv[1];
-    TCHAR*                                                   szCertDir  = (argc == 3) ? argv[2] : NULL;
-    FILE*                                                    pInStream  = NULL;
-    TPdfToolsPdf_Document*                                   pInDoc     = NULL;
-    TPdfToolsSignatureValidationProfiles_Default*             pProfile   = NULL;
-    TPdfToolsSignatureValidation_CustomTrustList*             pCtl       = NULL;
-    TPdfToolsSignatureValidation_Validator*                   pValidator = NULL;
-    TPdfToolsSignatureValidation_ValidationResults*        pResults   = NULL;
+    TCHAR*                                          szInPath   = argv[1];
+    TCHAR*                                          szCertDir  = (argc == 3) ? argv[2] : NULL;
+    FILE*                                           pInStream  = NULL;
+    TPdfToolsPdf_Document*                          pInDoc     = NULL;
+    TPdfToolsSignatureValidationProfiles_Default*   pProfile   = NULL;
+    TPdfToolsSignatureValidation_CustomTrustList*   pCtl       = NULL;
+    TPdfToolsSignatureValidation_Validator*         pValidator = NULL;
+    TPdfToolsSignatureValidation_ValidationResults* pResults   = NULL;
 
     // Initialize library
     PdfTools_Initialize();
 
     // By default, a test license key is active. In this case, a watermark is added to the output. 
     // If you have a license key, please uncomment the following call and set the license key.
-    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("insert-license-key-here"), NULL),
+    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("<-- insert license key -->"), NULL),
     //                                     _T("Failed to set the license key. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
     //                                     PdfTools_GetLastError());
 
     // Create the default validation profile
     pProfile = PdfToolsSignatureValidationProfiles_Default_New();
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pProfile,
-        _T("Failed to create validation profile. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pProfile, _T("Failed to create validation profile. %s (ErrorCode: 0x%08x).\n"),
+                                     szErrorBuff, PdfTools_GetLastError());
 
     // For offline operation, build a custom trust list from the file system
     // and disable external revocation checks
@@ -562,10 +530,8 @@ int _tmain(int argc, TCHAR* argv[])
 
         // Create a CustomTrustList to hold the certificates
         pCtl = PdfToolsSignatureValidation_CustomTrustList_New();
-        GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-            pCtl,
-            _T("Failed to create custom trust list. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-            PdfTools_GetLastError());
+        GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pCtl, _T("Failed to create custom trust list. %s (ErrorCode: 0x%08x).\n"),
+                                         szErrorBuff, PdfTools_GetLastError());
 
         // Iterate through files in the certificate directory and add certificates
         // to the custom trust list
@@ -576,7 +542,7 @@ int _tmain(int argc, TCHAR* argv[])
             TCHAR           szSearchPath[512];
             TCHAR           szFilePath[512];
 
-            _stprintf(szSearchPath, _T("%s\*"), szCertDir);
+            _stprintf(szSearchPath, _T("%s\\*"), szCertDir);
             hFind = FindFirstFile(szSearchPath, &findData);
             if (hFind != INVALID_HANDLE_VALUE)
             {
@@ -585,7 +551,7 @@ int _tmain(int argc, TCHAR* argv[])
                     if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                         continue;
 
-                    _stprintf(szFilePath, _T("%s\%s"), szCertDir, findData.cFileName);
+                    _stprintf(szFilePath, _T("%s\\%s"), szCertDir, findData.cFileName);
 
                     FILE* pCertStream = _tfopen(szFilePath, _T("rb"));
                     if (pCertStream == NULL)
@@ -669,15 +635,16 @@ int _tmain(int argc, TCHAR* argv[])
         _tprintf(_T("\n"));
 
         // Assign the custom trust list to the validation profile
-        GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(
-            PdfToolsSignatureValidationProfiles_Profile_SetCustomTrustList((TPdfToolsSignatureValidationProfiles_Profile*)pProfile, pCtl),
-            _T("Failed to set custom trust list. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-            PdfTools_GetLastError());
+        GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfToolsSignatureValidationProfiles_Profile_SetCustomTrustList(
+                                              (TPdfToolsSignatureValidationProfiles_Profile*)pProfile, pCtl),
+                                          _T("Failed to set custom trust list. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
+                                          PdfTools_GetLastError());
 
         // Allow validation from embedded file sources and the custom trust list
         {
             TPdfToolsSignatureValidationProfiles_ValidationOptions* pValOpts =
-                PdfToolsSignatureValidationProfiles_Profile_GetValidationOptions((TPdfToolsSignatureValidationProfiles_Profile*)pProfile);
+                PdfToolsSignatureValidationProfiles_Profile_GetValidationOptions(
+                    (TPdfToolsSignatureValidationProfiles_Profile*)pProfile);
             PdfToolsSignatureValidationProfiles_ValidationOptions_SetTimeSource(
                 pValOpts, ePdfToolsSignatureValidation_TimeSource_ProofOfExistence |
                               ePdfToolsSignatureValidation_TimeSource_ExpiredTimeStamp |
@@ -691,12 +658,14 @@ int _tmain(int argc, TCHAR* argv[])
         // Disable revocation checks
         {
             TPdfToolsSignatureValidationProfiles_TrustConstraints* pSigningConstraints =
-                PdfToolsSignatureValidationProfiles_Profile_GetSigningCertTrustConstraints((TPdfToolsSignatureValidationProfiles_Profile*)pProfile);
+                PdfToolsSignatureValidationProfiles_Profile_GetSigningCertTrustConstraints(
+                    (TPdfToolsSignatureValidationProfiles_Profile*)pProfile);
             PdfToolsSignatureValidationProfiles_TrustConstraints_SetRevocationCheckPolicy(
                 pSigningConstraints, ePdfToolsSignatureValidationProfiles_RevocationCheckPolicy_NoCheck);
 
             TPdfToolsSignatureValidationProfiles_TrustConstraints* pTsConstraints =
-                PdfToolsSignatureValidationProfiles_Profile_GetTimeStampTrustConstraints((TPdfToolsSignatureValidationProfiles_Profile*)pProfile);
+                PdfToolsSignatureValidationProfiles_Profile_GetTimeStampTrustConstraints(
+                    (TPdfToolsSignatureValidationProfiles_Profile*)pProfile);
             PdfToolsSignatureValidationProfiles_TrustConstraints_SetRevocationCheckPolicy(
                 pTsConstraints, ePdfToolsSignatureValidationProfiles_RevocationCheckPolicy_NoCheck);
         }
@@ -704,16 +673,13 @@ int _tmain(int argc, TCHAR* argv[])
 
     // Create the validator object
     pValidator = PdfToolsSignatureValidation_Validator_New();
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pValidator,
-        _T("Failed to create validator. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pValidator, _T("Failed to create validator. %s (ErrorCode: 0x%08x).\n"),
+                                     szErrorBuff, PdfTools_GetLastError());
 
     // Add a constraint event listener
     GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(
         PdfToolsSignatureValidation_Validator_AddConstraintHandler(pValidator, NULL, ConstraintListener),
-        _T("Failed to add constraint handler. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+        _T("Failed to add constraint handler. %s (ErrorCode: 0x%08x).\n"), szErrorBuff, PdfTools_GetLastError());
 
     // Open input document
     pInStream = _tfopen(szInPath, _T("rb"));
@@ -727,13 +693,11 @@ int _tmain(int argc, TCHAR* argv[])
 
     // Validate ALL signatures in the document
     _tprintf(_T("Validation Constraints\n"));
-    pResults = PdfToolsSignatureValidation_Validator_Validate(
-        pValidator, pInDoc, (TPdfToolsSignatureValidationProfiles_Profile*)pProfile,
-        ePdfToolsSignatureValidation_SignatureSelector_All);
-    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(
-        pResults,
-        _T("Failed to validate signatures. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
-        PdfTools_GetLastError());
+    pResults = PdfToolsSignatureValidation_Validator_Validate(pValidator, pInDoc,
+                                                              (TPdfToolsSignatureValidationProfiles_Profile*)pProfile,
+                                                              ePdfToolsSignatureValidation_SignatureSelector_All);
+    GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pResults, _T("Failed to validate signatures. %s (ErrorCode: 0x%08x).\n"),
+                                     szErrorBuff, PdfTools_GetLastError());
 
     // Print results
     {
@@ -755,7 +719,8 @@ int _tmain(int argc, TCHAR* argv[])
             // Get and print the field name
             TCHAR szFieldName[256] = {0};
             TCHAR szName[256]      = {0};
-            PdfToolsPdf_SignatureField_GetFieldName((TPdfToolsPdf_SignatureField*)pField, szFieldName, ARRAY_SIZE(szFieldName));
+            PdfToolsPdf_SignatureField_GetFieldName((TPdfToolsPdf_SignatureField*)pField, szFieldName,
+                                                    ARRAY_SIZE(szFieldName));
             PdfToolsPdf_SignedSignatureField_GetName(pField, szName, ARRAY_SIZE(szName));
             _tprintf(_T("%s of %s\n"), szFieldName, szName);
 

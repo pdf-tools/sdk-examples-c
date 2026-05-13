@@ -36,26 +36,7 @@
 #include "PdfTools.h"
 
 #include <locale.h>
-#if !defined(WIN32)
-#define TCHAR char
-#define _tcslen strlen
-#define _tcscat strcat
-#define _tcscpy strcpy
-#define _tcsrchr strrchr
-#define _tcstok strtok
-#define _tcslen strlen
-#define _tcscmp strcmp
-#define _tcsftime strftime
-#define _tcsncpy strncpy
-#define _tmain main
-#define _tfopen fopen
-#define _ftprintf fprintf
-#define _stprintf sprintf
-#define _tstof atof
-#define _tremove remove
-#define _tprintf printf
-#define _T(str) str
-#endif
+#include "compat.h"
 
 
 #define MIN(a, b)     (((a) < (b) ? (a) : (b)))
@@ -112,20 +93,20 @@ int _tmain(int argc, TCHAR* argv[])
         return Usage();
     }
 
-    TCHAR*                           szInPath    = argv[1];
-    TCHAR*                           szOutDir    = argv[2];
-    FILE*                            pInStream   = NULL;
-    FILE*                            pOutStream  = NULL;
-    TPdfToolsPdf_Document*           pInDoc      = NULL;
-    TPdfToolsExtraction_TextOptions* pOptions    = NULL;
-    TPdfToolsExtraction_Extractor*   pExtractor  = NULL;
+    TCHAR*                           szInPath   = argv[1];
+    TCHAR*                           szOutDir   = argv[2];
+    FILE*                            pInStream  = NULL;
+    FILE*                            pOutStream = NULL;
+    TPdfToolsPdf_Document*           pInDoc     = NULL;
+    TPdfToolsExtraction_TextOptions* pOptions   = NULL;
+    TPdfToolsExtraction_Extractor*   pExtractor = NULL;
 
     // Initialize library
     PdfTools_Initialize();
 
     // By default, a test license key is active. In this case, a watermark is added to the output. 
     // If you have a license key, please uncomment the following call and set the license key.
-    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("insert-license-key-here"), NULL),
+    // GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfTools_Sdk_Initialize(_T("<-- insert license key -->"), NULL),
     //                                     _T("Failed to set the license key. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
     //                                     PdfTools_GetLastError());
 
@@ -155,10 +136,10 @@ int _tmain(int argc, TCHAR* argv[])
                                      szErrorBuff, PdfTools_GetLastError());
 
     // Set extraction format to monospace to preserve the original layout
-    GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(
-        PdfToolsExtraction_TextOptions_SetExtractionFormat(pOptions,
-                                                           ePdfToolsExtraction_TextExtractionFormat_Monospace),
-        _T("Failed to set extraction format. %s (ErrorCode: 0x%08x).\n"), szErrorBuff, PdfTools_GetLastError());
+    GOTO_CLEANUP_IF_FALSE_PRINT_ERROR(PdfToolsExtraction_TextOptions_SetExtractionFormat(
+                                          pOptions, ePdfToolsExtraction_TextExtractionFormat_Monospace),
+                                      _T("Failed to set extraction format. %s (ErrorCode: 0x%08x).\n"), szErrorBuff,
+                                      PdfTools_GetLastError());
 
     // Set advance width for monospace text (9.2pt)
     double dAdvanceWidth = 9.2;

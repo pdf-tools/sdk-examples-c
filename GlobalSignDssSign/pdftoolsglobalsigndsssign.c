@@ -143,7 +143,7 @@ int _tmain(int argc, TCHAR* argv[])
 
     // Create signature configuration for dynamic identity
     TCHAR szIdentity[1024];
-    _stprintf(szIdentity, _T("{\"subject_dn\":{\"common_name\":\"%s\"}}"), szCommonName);
+    _sntprintf(szIdentity, ARRAY_SIZE(szIdentity), _T("{\"subject_dn\":{\"common_name\":\"%s\"}}"), szCommonName);
     pSignConfig = PdfToolsCryptoProvidersGlobalSignDss_Session_CreateSignatureForDynamicIdentity(pSession, szIdentity);
     GOTO_CLEANUP_IF_NULL_PRINT_ERROR(pSignConfig,
                                      _T("Failed to create signature configuration. %s (ErrorCode: 0x%08x).\n"),

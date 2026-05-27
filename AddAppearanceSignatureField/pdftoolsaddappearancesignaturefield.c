@@ -167,7 +167,7 @@ int _tmain(int argc, TCHAR* argv[])
     PdfToolsSysCreateFILEStreamDescriptor(&appDesc, pAppStream, 0);
 
     const TCHAR* szExt = _tcsrchr(szAppConfigFile, '.');
-    if (szExt != NULL && _tcscmp(szExt, _T(".xml")) == 0)
+    if (szExt != NULL && _tcsicmp(szExt, _T(".xml")) == 0)
         pAppearance = PdfToolsSign_Appearance_CreateFromXml(&appDesc);
     else
         pAppearance = PdfToolsSign_Appearance_CreateFromJson(&appDesc);

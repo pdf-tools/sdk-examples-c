@@ -65,7 +65,7 @@ void CreateOutputFileName(TCHAR* buffer, const TCHAR* outPath, const int i)
     const TCHAR szPage[7] = _T("_page_");
     TCHAR       numBuffer[5];
 
-    _stprintf(numBuffer, _T("%d"), i);
+    _sntprintf(numBuffer, ARRAY_SIZE(numBuffer), _T("%d"), i);
 
     _tcscpy(buffer, outPath);
     _tcscat(buffer, szPage);
@@ -129,7 +129,7 @@ int _tmain(int argc, TCHAR* argv[])
 
     // Split input document by generating one output document per page
     int   nPageCount = PdfToolsPdf_Document_GetPageCount(pInDoc);
-    TCHAR szPageFileName[256];
+    TCHAR szPageFileName[PATH_MAX];
     for (int i = 1; i <= nPageCount; i++)
     {
         CreateOutputFileName(szPageFileName, szOutPath, i);

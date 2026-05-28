@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
 #include <windows.h>
 #else
 #include <dirent.h>
@@ -252,12 +252,12 @@ void PrintConstraintResult(TPdfToolsSignatureValidation_ConstraintResult* pConst
 void FormatDate(TPdfToolsSys_Date* pDate, TCHAR* szBuffer, size_t nBufferSize)
 {
     if (pDate->iTZSign == 0)
-        _stprintf(szBuffer, _T("%02d/%02d/%04d %02d:%02d:%02d"), pDate->iDay, pDate->iMonth, pDate->iYear, pDate->iHour,
-                  pDate->iMinute, pDate->iSecond);
+        _sntprintf(szBuffer, nBufferSize, _T("%02d/%02d/%04d %02d:%02d:%02d"), pDate->iDay, pDate->iMonth, pDate->iYear,
+                   pDate->iHour, pDate->iMinute, pDate->iSecond);
     else
-        _stprintf(szBuffer, _T("%02d/%02d/%04d %02d:%02d:%02d %c%02d:%02d"), pDate->iDay, pDate->iMonth, pDate->iYear,
-                  pDate->iHour, pDate->iMinute, pDate->iSecond, pDate->iTZSign > 0 ? '+' : '-', pDate->iTZHour,
-                  pDate->iTZMinute);
+        _sntprintf(szBuffer, nBufferSize, _T("%02d/%02d/%04d %02d:%02d:%02d %c%02d:%02d"), pDate->iDay, pDate->iMonth,
+                   pDate->iYear, pDate->iHour, pDate->iMinute, pDate->iSecond, pDate->iTZSign > 0 ? '+' : '-',
+                   pDate->iTZHour, pDate->iTZMinute);
 }
 
 // Print certificate details
@@ -471,7 +471,7 @@ int EndsWith(const TCHAR* szFileName, const TCHAR* szSuffix)
     size_t nSuffixLen = _tcslen(szSuffix);
     if (nFileLen < nSuffixLen)
         return 0;
-    return _tcscmp(szFileName + nFileLen - nSuffixLen, szSuffix) == 0;
+    return _tcsicmp(szFileName + nFileLen - nSuffixLen, szSuffix) == 0;
 }
 
 int Usage()
@@ -535,14 +535,14 @@ int _tmain(int argc, TCHAR* argv[])
 
         // Iterate through files in the certificate directory and add certificates
         // to the custom trust list
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
         {
             WIN32_FIND_DATA findData;
             HANDLE          hFind;
-            TCHAR           szSearchPath[512];
-            TCHAR           szFilePath[512];
+            TCHAR           szSearchPath[PATH_MAX];
+            TCHAR           szFilePath[PATH_MAX];
 
-            _stprintf(szSearchPath, _T("%s\\*"), szCertDir);
+            _sntprintf(szSearchPath, ARRAY_SIZE(szSearchPath), _T("%s") PATH_SEP_STR _T("*"), szCertDir);
             hFind = FindFirstFile(szSearchPath, &findData);
             if (hFind != INVALID_HANDLE_VALUE)
             {
@@ -551,7 +551,8 @@ int _tmain(int argc, TCHAR* argv[])
                     if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                         continue;
 
-                    _stprintf(szFilePath, _T("%s\\%s"), szCertDir, findData.cFileName);
+                    _sntprintf(szFilePath, ARRAY_SIZE(szFilePath), _T("%s") PATH_SEP_STR _T("%s"), szCertDir,
+                               findData.cFileName);
 
                     FILE* pCertStream = _tfopen(szFilePath, _T("rb"));
                     if (pCertStream == NULL)
@@ -588,7 +589,7 @@ int _tmain(int argc, TCHAR* argv[])
         {
             DIR*           pDir;
             struct dirent* pEntry;
-            char           szFilePath[512];
+            TCHAR          szFilePath[PATH_MAX];
 
             pDir = opendir(szCertDir);
             if (pDir != NULL)
@@ -598,7 +599,8 @@ int _tmain(int argc, TCHAR* argv[])
                     if (pEntry->d_name[0] == '.')
                         continue;
 
-                    _stprintf(szFilePath, _T("%s/%s"), szCertDir, pEntry->d_name);
+                    _sntprintf(szFilePath, ARRAY_SIZE(szFilePath), _T("%s") PATH_SEP_STR _T("%s"), szCertDir,
+                               pEntry->d_name);
 
                     FILE* pCertStream = _tfopen(szFilePath, _T("rb"));
                     if (pCertStream == NULL)

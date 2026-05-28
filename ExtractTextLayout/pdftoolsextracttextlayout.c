@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
 #include <direct.h>
 #else
 #include <sys/stat.h>
@@ -111,7 +111,7 @@ int _tmain(int argc, TCHAR* argv[])
     //                                     PdfTools_GetLastError());
 
     // Create output directory
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
     _tmkdir(szOutDir);
 #else
     mkdir(szOutDir, 0755);
@@ -156,8 +156,8 @@ int _tmain(int argc, TCHAR* argv[])
     for (int i = 1; i <= nPageCount; i++)
     {
         // Build output filename for each page
-        TCHAR szPageFile[512];
-        _stprintf(szPageFile, _T("%s/page%d.txt"), szOutDir, i);
+        TCHAR szPageFile[PATH_MAX];
+        _sntprintf(szPageFile, ARRAY_SIZE(szPageFile), _T("%s") PATH_SEP_STR _T("page%d.txt"), szOutDir, i);
 
         // Create output stream for writing
         pOutStream = _tfopen(szPageFile, _T("wb+"));

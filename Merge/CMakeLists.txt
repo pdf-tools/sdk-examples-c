@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(pdftoolsmerge_sample LANGUAGES C)
 
 set(PDFTOOLS_SDK_URL
-    "https://pdftools-public-downloads-production.s3.eu-west-1.amazonaws.com/productkits/PDFSDK/1.20.0/PdfToolsSDK_C-1.20.0.zip"
+    "https://pdftools-public-downloads-production.s3.eu-west-1.amazonaws.com/productkits/PDFSDK/1.20.1/PdfToolsSDK_C-1.20.1.zip"
     CACHE STRING "URL to the PdfTools SDK archive (.zip)")
 
 set(SDK_DIR     "${CMAKE_BINARY_DIR}/pdftools_sdk")
